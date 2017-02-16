@@ -36,8 +36,8 @@
     <script>
       var map;
       var map2;
-      var lon;
-      var lat;
+      var lonIni;
+      var latIni;
 
       require(["esri/map",
         "esri/geometry/Point",
@@ -63,6 +63,11 @@
           basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
           zoom: 5
         });
+        map.on("load", function(){
+          var center = map.extent.getCenter();
+          var zoom = map.level;
+          antipodas(map2, center, zoom)
+        })
         map.on("click", function(mouseEvent){
     			var p = mouseEvent.mapPoint;
     			map.centerAt(p);
@@ -105,8 +110,8 @@
       });
 
       function showLocation(position) {
-        lon = position.coords.longitude;
-        lat = position.coords.latitude;
+        lonIni = position.coords.longitude;
+        latIni = position.coords.latitude;
         map.centerAt([lon, lat])
       }
 
@@ -121,7 +126,6 @@
     <h1><center>Mapa de las antípodas</center></h1>
     <div class="papi">
       <div id="map"></div>
-
       <div id="map2"></div>
     </div>
   </body>
