@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+    <title>Mi primer mapa</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+    <style>
+      html, body, #map {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    <script src="https://js.arcgis.com/3.19/"></script>
+    <script>
+      var map;
+      var lon;
+      var lat;
+
+      require(["esri/map",
+        "esri/geometry/Point",
+        "dojo/domReady!"],
+      function(Map, Point) {
+        if (navigator.geolocation) {
+          var geo = navigator.geolocation;
+          geo.getCurrentPosition(showLocation, showError);
+          }
+        else {
+          alert("Geolocation not supported in this browser");
+          }
+        var pt = new Point (-3, 40);
+        map = new Map("map", {zoom: 13});
+        var tiled = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/arcgis/rest/services/ESRI_StreetMap_World_2D/MapServer");
+        var dyn = new esri.layers.ArcGISDynamicMapServiceLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer");
+        map.addLayer(tiled);
+        map.addLayer(dyn);
+      });
+      function init() {
+
+        }
+
+      function showLocation(position) {
+        lon = position.coords.longitude;
+        lat = position.coords.latitude;
+        map.centerAt([lon, lat])
+        console.log("lat: " + lat + " long: " + lon);
+      }
+
+      function showError(error) {
+        alert("There has been an error");
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="map"></div>
+  </body>
+</html>

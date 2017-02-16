@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+    <title>Mapa de las antípodas</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
+      #parent {
+        overflow: hidden;
+        border: 1px solid red
+      }
+      #sep {
+        width: 4%;
+      }
+      #map2 {
+        float: right;
+        width: 48%;
+        height: 800px;
+        background: #888;
+      }
+      #map {
+        float: left;
+        overflow: hidden;
+        width: 48%;
+        height: 800px;
+        background: #ccc
+      }
+    </style>
+    <script src="https://js.arcgis.com/3.19/"></script>
+    <script>
+      var map;
+      var map2;
+      var lon;
+      var lat;
+
+      require(["esri/map",
+        "esri/geometry/Point",
+        "esri/geometry/Geometry",
+        "esri/geometry/webMercatorUtils",
+        "dojo/domReady!"],
+      function(Map, Point) {
+        if (navigator.geolocation) {
+          var geo = navigator.geolocation;
+          geo.getCurrentPosition(showLocation, showError);
+          }
+        else {
+          alert("Geolocation not supported in this browser");
+          }
+        var pt = new Point (-3, 40);
+        map = new Map("map", {
+          basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+          center: pt, // longitude, latitude
+          zoom: 13
+        });
+        map2 = new Map("map2", {
+          basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+          zoom: 13
+        });
+        map.on("click", function(mouseEvent){
+    			var p = mouseEvent.mapPoint;
+          console.log("p: " + p.getLatitude() + "," + p.getLongitude());
+    			map.centerAt(p);
+    		});
+        map2.on("click", function(mouseEvent){
+    			var p = mouseEvent.mapPoint;
+          map2.centerAt(p);
+        });
+        map.on("extent-change", function (change){
+          var center = change.extent.getCenter();
+          var zoom = map.level;
+          antipodas(map2, center, zoom)
+        });
+        map.on("zoom-end", function(evt){
+    			var zoom = evt.level;
+      			map2.setZoom(zoom);
+    		});
+        map2.on("zoom-end", function(evt){
+    			var zoom = evt.level;
+      			map.setZoom(zoom);
+    		});
+        function antipodas(mapa, center, zoom){
+          var lat = -center.getLatitude();
+          var lon;
+          if (center.getLongitude() < 0){
+            lon = center.getLongitude() + 180;
+          }
+          else {
+            lon = center.getLongitude() - 180;
+          }
+          var center2 = ([lon, lat])
+          mapa.centerAndZoom(center2, zoom)
+        };
+      });
+
+      function showLocation(position) {
+        lon = position.coords.longitude;
+        lat = position.coords.latitude;
+        map.centerAt([lon, lat])
+        map2.centerAt([lon, lat])
+        console.log("lat: " + lat + " long: " + lon);
+      }
+
+      function showError(error) {
+        alert("There has been an error");
+      }
+
+    </script>
+  </head>
+
+  <body>
+    <h1><center>Mapa de las antípodas</center></h1>
+    <div class="papi">
+      <div id="map"></div>
+      <div id="sep"></div>
+      <div id="map2"></div>
+    </div>
+  </body>
+</html>
