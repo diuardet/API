@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+    <title>webMap</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+    <style>
+      html, body, #map {
+        height: 800px;
+        width: 98%;
+        margin: 1;
+        padding: 0;
+      }
+    </style>
+
+    <script src="https://js.arcgis.com/3.19/"></script>
+
+    <script>
+    require(["esri/map",
+			"esri/arcgis/utils",
+			"esri/dijit/LayerList",
+			"dojo/domReady!"],
+      function (Map, arcgisUtils, LayerList) {
+        webmapID = "58d5adcbd4054f1dbe22439d10777ca2";
+        arcgisUtils.createMap (webmapID, "map").then(function(response){
+          var myWidget = new LayerList ({
+            map: response.map,
+            layers: arcgisUtils.getLayerList(response)
+          }, "layerList");
+          myWidget.startup();
+        });
+    });
+    </script>
+  </head>
+
+  <body class="claro">
+
+    <div id="content">
+      <div id="layerList"></div>
+      <div id="map"
+        style="overflow:hidden;">
+      </div>
+    </div>
+
+  </body>
+</html>

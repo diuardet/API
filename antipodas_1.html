@@ -93,7 +93,7 @@
           var centerLatLong = webMercatorUtils.xyToLngLat(center.x, center.y);
           var lat = -centerLatLong[1];
           var lon;
-          if (centerLatLong[0]){
+          if (centerLatLong[0]<0){
             lon = centerLatLong[0] + 180;
           }
           else {
