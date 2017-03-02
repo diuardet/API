@@ -5,17 +5,15 @@
     <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
     <title>Mapa de las antípodas</title>
     <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+    <link rel="stylesheet" type="text/css" href="http://esri.github.io/bootstrap-map-js/src/css/bootstrapmap.css">
     <style>
       html, body {
         margin: 0;
         padding: 0;
       }
-      #parent {
+      #papi {
         overflow: hidden;
         border: 1px solid red
-      }
-      #sep {
-        width: 4%;
       }
       #map2 {
         float: right;
@@ -35,15 +33,16 @@
     <script>
       var map;
       var map2;
-      var lon;
-      var lat;
+      var lonIni;
+      var latIni;
 
       require(["esri/map",
         "esri/geometry/Point",
-        "esri/geometry/Geometry",
         "esri/geometry/webMercatorUtils",
         "dojo/domReady!"],
-      function(Map, Point) {
+      function(Map,
+        Point,
+        webMercatorUtils) {
         if (navigator.geolocation) {
           var geo = navigator.geolocation;
           geo.getCurrentPosition(showLocation, showError);
@@ -55,25 +54,34 @@
         map = new Map("map", {
           basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
           center: pt, // longitude, latitude
-          zoom: 13
+          zoom: 5
         });
         map2 = new Map("map2", {
           basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
-          zoom: 13
+          zoom: 5
         });
+        map.on("load", function(){
+          var center = map.extent.getCenter();
+          var zoom = map.level;
+          antipodas(map2, center, zoom)
+        })
         map.on("click", function(mouseEvent){
     			var p = mouseEvent.mapPoint;
-          console.log("p: " + p.getLatitude() + "," + p.getLongitude());
     			map.centerAt(p);
     		});
         map2.on("click", function(mouseEvent){
     			var p = mouseEvent.mapPoint;
           map2.centerAt(p);
         });
-        map.on("extent-change", function (change){
-          var center = change.extent.getCenter();
+        map.on("mouse-down", function (){
+          var center = map.extent.getCenter();
           var zoom = map.level;
           antipodas(map2, center, zoom)
+        });
+        map2.on("mouse-down", function (){
+          var center = map2.extent.getCenter();
+          var zoom = map2.level;
+          antipodas(map, center, zoom)
         });
         map.on("zoom-end", function(evt){
     			var zoom = evt.level;
@@ -84,25 +92,24 @@
       			map.setZoom(zoom);
     		});
         function antipodas(mapa, center, zoom){
-          var lat = -center.getLatitude();
+          var centerLatLong = webMercatorUtils.xyToLngLat(center.x, center.y);
+          var lat = -centerLatLong[1];
           var lon;
-          if (center.getLongitude() < 0){
-            lon = center.getLongitude() + 180;
+          if (centerLatLong[0] < 0){
+            lon = centerLatLong[0] + 180;
           }
           else {
-            lon = center.getLongitude() - 180;
+            lon = centerLatLong[0] - 180;
           }
-          var center2 = ([lon, lat])
-          mapa.centerAndZoom(center2, zoom)
+          mapa.centerAndZoom(([lon, lat]), zoom);
+
         };
       });
 
       function showLocation(position) {
-        lon = position.coords.longitude;
-        lat = position.coords.latitude;
+        lonIni = position.coords.longitude;
+        latIni = position.coords.latitude;
         map.centerAt([lon, lat])
-        map2.centerAt([lon, lat])
-        console.log("lat: " + lat + " long: " + lon);
       }
 
       function showError(error) {
@@ -116,7 +123,6 @@
     <h1><center>Mapa de las antípodas</center></h1>
     <div class="papi">
       <div id="map"></div>
-      <div id="sep"></div>
       <div id="map2"></div>
     </div>
   </body>

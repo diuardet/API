@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Pruebas</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+  	<script src="https://js.arcgis.com/3.19/"></script>
+
+    <script>
+      function poblarOpcionesQuery(s1, s2) {
+        var s1 = document.getElementById(s1);
+        var s2 = document.getElementById(s2);
+        s2.innerHTML = "";
+        if(s1.value == "OBJECTID"){
+          var optionArray = ["|", "<|<", "<=|<=", "=|=", ">=|>=", ">|>"]
+        } else if(s1.value == "CITY_NAME"){
+          var optionArray = ["|", "=|="]
+        } else if(s1.value == "POP"){
+          var optionArray = ["|", "<|<", "<=|<=", "=|=", ">=|>=", ">|>"]
+        }
+        for(var option in optionArray){
+          var pair = optionArray[option].split("|");
+          var newOption = document.createElement("option");
+          newOption.value = pair [0];
+          newOption.innerHTML = pair [1];
+          s2.options.add(newOption);
+        }
+      };
+    </script>
+
+  </head>
+  <body>
+    <b>Consulta SQL:</b>
+    <select id="campo" onchange="poblarOpcionesQuery(this.id, 'condicion')">
+      <option value="OBJECTID">ObjectID</option>
+      <option value="CITY_NAME">City Name</option>
+      <option value="POP">Population</option>
+    </select>
+    <select id="condicion">
+
+    </select>
+  </body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Ejercicio de Consultas SQL</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+	<script src="https://js.arcgis.com/3.19/"></script>
+
+	<style>
+	html, body, #map {
+		padding: 0;
+		margin: 0;
+		height: 90%;
+  }
+
+    thead {color:red;}
+
+    table, th, td {
+    border: 1px solid black;
+  }
+  #t_oid {width: 15%;}
+  #t_name {width: 35%;}
+  #t_pop {width: 15%;}
+	</style>
+
+	<script>
+  function poblarOpcionesQuery(s1, s2) {
+    var s1 = document.getElementById(s1);
+    var s2 = document.getElementById(s2);
+    s2.innerHTML = "";
+    if(s1.value == "OBJECTID"){
+      var optionArray = ["|", "<|<", "<=|<=", "=|=", ">=|>=", ">|>"]
+    } else if(s1.value == "CITY_NAME"){
+      var optionArray = ["|", "==|=="]
+    } else if(s1.value == "POP"){
+      var optionArray = ["|", "<|<", "<=|<=", "=|=", ">=|>=", ">|>"]
+    }
+    for(var option in optionArray){
+      var pair = optionArray[option].split("|");
+      var newOption = document.createElement("option");
+      newOption.value = pair [0];
+      newOption.innerHTML = pair [1];
+      s2.options.add(newOption);
+    }
+  };
+	var map;
+	var urlDynamic = "https://localhost:6443/arcgis/rest/services/SampleWorldCities/MapServer";
+	var urlCities = "https://localhost:6443/arcgis/rest/services/SampleWorldCities/MapServer/0";
+	require(["esri/map",
+		"esri/geometry/Circle",
+		"esri/layers/ArcGISDynamicMapServiceLayer",
+		"esri/tasks/query",
+		"esri/tasks/QueryTask",
+		"esri/geometry/Polygon",
+		"esri/symbols/PictureMarkerSymbol",
+		"esri/symbols/SimpleFillSymbol",
+		"esri/graphic",
+		"esri/layers/GraphicsLayer",
+		"esri/Color",
+    "esri/toolbars/draw",
+		"dojo/domReady!"],
+	function(Map, Circle, ArcGISDynamicMapServiceLayer, Query, QueryTask, Polygon,
+    PictureMarkerSymbol, SimpleFillSymbol, Graphic, GraphicsLayer, Color, Draw) {
+		    // code to create the map and add a basemap will go here
+		    map = new Map("map", {
+		    	center: [-56.049, 38.485],
+		    	zoom: 3,
+		    	basemap: "gray"
+		  	});
+        var toolbarDraw = new Draw(map, {
+          tooltipOffset: 20,
+          drawTime: 90
+        });
+
+        var symbolPoly = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, null, new Color([255,0,0,0.2]));
+        toolbarDraw.setFillSymbol(symbolPoly);
+
+        map.on("load", function(){
+          toolbarDraw.activate(Draw.POLYGON);
+        });
+
+        toolbarDraw.on("onDrawEnd", function(geometry){
+          //QUERY
+          //constructor
+          var myQuery = new Query();
+          //criterio por atributos
+          var cmp = document.getElementById("campo");
+          var cnd = document.getElementById("condicion");
+          var txt = document.getElementById("query");
+          myQuery.where = cmp.value + cnd.value + txt.value;
+
+          //Atributos de salida
+          myQuery.outFields = ["OBJECTID", "CITY_NAME", "POP"];
+          //si queremos que devuelva la geometría
+          myQuery.returnGeometry = true;
+          myQuery.outSpatialReference = map.spatialReference;
+         //criterio espacial
+        //creo una geometria
+          var gr = new Graphic(geometry, symbolPoly);
+          graphicLayer.add(gr);
+          myQuery.geometry = geometry;
+          myQuery.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+          myQueryTask.execute(myQuery,show);
+        });
+
+		    dynamLayer = new ArcGISDynamicMapServiceLayer(urlDynamic,{id:"Ciudades",opacity:0.5});
+        	map.addLayer(dynamLayer);
+        	var graphicLayer = new GraphicsLayer();
+        	map.addLayer(graphicLayer);
+
+          //QUERYTASK
+			      //Creamos la queryTask
+		      var myQueryTask = new QueryTask(urlCities);
+
+		function show(fsResult){
+			var features = fsResult.features;
+      var prueba = features.attributes;
+			map.graphics.clear();
+			if(features.length!=0){
+				var ptPicSymbol = new PictureMarkerSymbol("https://static.arcgis.com/images/Symbols/Shapes/GreenPin1LargeB.png", 50, 50);
+				ptPicSymbol.setOffset(0,25);
+        borrarTabla();
+				for (var i = 0; i<features.length; i++){
+					features[i].symbol = ptPicSymbol;
+					map.graphics.add(features[i]);
+          poblarTabla(features[i]);
+				}
+			} else {
+				alert("no se ha encontrado ninguna entidad que cumpla las condiciones")
+			}
+		};
+    function borrarTabla(){
+      var tabla = document.getElementById("tbody");
+      if (tabla.firstChild) {
+        while (tabla.firstChild){
+          tabla.removeChild(tabla.firstChild);
+        };
+      }
+    };
+    function opciones_query(){
+
+    }
+    function poblarTabla(feature){
+      var tabla = document.getElementById("tbody");
+      var atributos = feature.attributes;
+      var oid = atributos.OBJECTID;
+      var c_name = atributos.CITY_NAME;
+      var poblacion = atributos.POP;
+
+      var fila = document.createElement("tr");
+      var filaData = [oid, c_name, poblacion];
+      for (i in filaData){
+        var celda = document.createElement("td");
+        var textoCelda = document.createTextNode (filaData[i]);
+        celda.appendChild(textoCelda);
+        fila.appendChild(celda);
+      }
+      tabla.appendChild(fila);
+    };
+
+	});
+	</script>
+	</head>
+	<body class="claro">
+  		<div id="map"></div>
+      <br>
+      <div id="formulario">
+          <b>Clausula SQL:</b><br>
+          <select id="campo" onchange="poblarOpcionesQuery(this.id, 'condicion')">
+            <option value="OBJECTID">ObjectID</option>
+            <option value="CITY_NAME">City Name</option>
+            <option value="POP">Population</option>
+          </select>
+          <select id="condicion">
+
+          </select>
+          <input type="text" id="query" value="1"/>
+      </div>
+      <br>
+      <div id="tabla">
+        <table>
+          <thead id="thead">
+            <tr>
+              <th id="t_oid">ObjectID</th>
+              <th id="t_name">City Name</th>
+              <th id="t_pop">Population</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+          </tbody>
+        </table>
+      </div>
+  	</body>
+</html>

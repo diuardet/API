@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+    <title>Visor USA</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/themes/calcite/dijit/calcite.css">
+    <style>
+      html, body, #map {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #BasemapToggle {
+      position: absolute;
+      bottom: 50px;
+      right: 20px;
+      z-index: 50;
+      }
+      #HomeButton {
+        position: absolute;
+        top: 95px;
+        left: 20px;
+        z-index: 50;
+      }
+      #LocateButton {
+      position: absolute;
+      top: 140px;
+      left: 20px;
+      z-index: 50;
+    }
+    #search {
+       display: block;
+       position: absolute;
+       z-index: 50;
+       top: 20px;
+       left: 74px;
+    }
+    #LayerList {
+      width: 280px;
+      height: 250px;
+      background: #eee;
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 99;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    </style>
+    <script>var dojoConfig = { parseOnLoad: true };</script>
+    <script src="https://js.arcgis.com/3.19/"></script>
+    <script>
+      var map;
+      var lon;
+      var lat;
+
+      require(["esri/map",
+        "esri/geometry/Point",
+        "esri/dijit/BasemapGallery",
+        "esri/arcgis/utils",
+        "dojo/parser",
+        "esri/dijit/HomeButton",
+        "esri/dijit/BasemapToggle",
+        "esri/dijit/LocateButton",
+        "esri/dijit/Search",
+        "esri/dijit/LayerList",
+        "esri/layers/FeatureLayer",
+        "esri/InfoTemplate",
+        "esri/tasks/query",
+    		"esri/tasks/QueryTask",
+        "esri/geometry/Polygon",
+    		"esri/symbols/PictureMarkerSymbol",
+    		"esri/symbols/SimpleFillSymbol",
+    		"esri/graphic",
+    		"esri/layers/GraphicsLayer",
+    		"esri/Color",
+        "dijit/layout/BorderContainer",
+        "dijit/layout/ContentPane",
+        "dijit/TitlePane",
+        "dojo/domReady!"],
+      function(Map, Point, BasemapGallery, arcgisUtils, parser, HomeButton,
+        BasemapToggle, LocateButton, Search, LayerList, FeatureLayer, InfoTemplate,
+        Query, QueryTask, Polygon, PictureMarkerSymbol, SimpleFillSymbol,
+        Graphic, GraphicsLayer, Color) {
+        parser.parse();
+        if (navigator.geolocation) {
+          var geo = navigator.geolocation;
+          geo.getCurrentPosition(showLocation, showError);
+        }
+        else {
+          alert("Geolocation not supported in this browser");
+        }
+        var pt = new Point (-74.014892578125, 40.68063802521457);
+        map = new Map("map", {
+          basemap: "gray",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+          center: pt, // longitude, latitude
+          zoom: 3
+        });
+        var dyn = new esri.layers.ArcGISDynamicMapServiceLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer", {
+          id: "USA",
+          opacity: 0.5
+        });
+        map.addLayer(dyn);
+
+        var graphicLayer = new GraphicsLayer();
+        map.addLayer(graphicLayer);
+
+        map.on("click", function(mouseEvent){
+    			var p = mouseEvent.mapPoint;
+    			map.centerAt(p);
+          //criterio espacial
+          //creo una geometria
+          var circle = new Circle({
+            center: mouseEvent.mapPoint,
+            radius: 100000
+          });
+          //añado la geometría a la query
+          myQuery.geometry = circle;
+            //aplico el criterio espacial
+          myQuery.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+          var symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, null, new Color([255,0,0,0.2]));
+          var gr = new Graphic(circle, symbol);
+          graphicLayer.clear();
+          graphicLayer.add(gr);
+
+
+          //ejecutamos la query y cuando finalize la consulta lanzamos la función show
+          myQueryTask.execute(myQuery,show);
+          });
+    		});
+        //add the basemap gallery, in this case we'll display maps from ArcGIS.com including bing maps
+        var basemapGallery = new BasemapGallery({
+          showArcGISBasemaps: true,
+          map: map
+          }, "basemapGallery");
+        basemapGallery.startup();
+
+        basemapGallery.on("error", function(msg) {
+        console.log("basemap gallery error:  ", msg);
+        });
+
+        var home = new HomeButton({
+          map: map
+        }, "HomeButton");
+        home.startup();
+
+        var toggle = new BasemapToggle({
+          map: map,
+          basemap: "satellite"
+        }, "BasemapToggle");
+        toggle.startup();
+
+        geoLocate = new LocateButton({
+          map: map
+          }, "LocateButton");
+        geoLocate.startup();
+
+        var infoS = new InfoTemplate("Atributes", "State Name: ${state_name} <br> Population: ${pop2000}");
+        var infoC = new InfoTemplate("Atributes", "City Name: ${areaname} <br> Population: ${pop2000}");
+
+        var search = new Search({
+           map: map,
+           enableButtonMode: true,
+           enableInfoWindow: true,
+           showInfoWindowOnSelect: true,
+        }, "search");
+        var sources = search.get("sources");
+        sources.push({
+          featureLayer: new FeatureLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0"),
+          searchFields: ["areaname"],
+          suggestionTemplate: "${areaname}",
+          displayField: "areaname",
+          exactMatch: false,
+          outFields: ["*"],
+          name: "Cities",
+          placeholder: "City name",
+          maxResults: 6,
+          maxSuggestions: 6,
+          enableSuggestions: true,
+          minCharacters: 0,
+          infoTemplate: infoC
+        },{
+          featureLayer: new FeatureLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/2"),
+          searchFields: ["state_name"],
+          suggestionTemplate: "${state_name}",
+          displayField: "state_name",
+          exactMatch: false,
+          outFields: ["*"],
+          name: "States",
+          placeholder: "State name",
+          maxResults: 6,
+          maxSuggestions: 6,
+          enableSuggestions: true,
+          minCharacters: 0,
+          infoTemplate: infoS
+        });
+        search.set("sources", sources);
+        search.startup();
+
+        myWidget = new LayerList({
+          map: map,
+          showLegend: true,
+          showOpacitySlider: true,
+          layers: map._layers
+        }, "LayerList");
+        myWidget.startup();
+
+        //QUERY
+        //constructor
+        var myQuery = new Query();
+        //criterio por atributos
+        myQuery.where = "pop2000 > 50000";
+
+        //Atributos de salida
+        myQuery.outFields = ["areaname", "pop2000"];
+        //si queremos que devuelva la geometría
+        myQuery.returnGeometry = true;
+        myQuery.outSpatialReference = map.spatialReference;
+        //QUERYTASK
+        //Creamos la queryTask
+        var myQueryTask = new QueryTask("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0");
+
+        function show(fsResult){
+          var features = fsResult.features;
+          map.graphics.clear();
+          if(features.length!=0){
+            var ptPicSymbol = new PictureMarkerSymbol("https://static.arcgis.com/images/Symbols/Shapes/BluePin1LargeB.png", 50, 50);
+            ptPicSymbol.setOffset(0,25);
+            for (var i = 0; i<features.length; i++){
+              features[i].symbol = ptPicSymbol;
+              map.graphics.add(features[i]);
+              }
+          } else {
+            alert("no se ha encontrado ninguna entidad que cumpla las condiciones")
+          }
+        };
+
+      function showLocation(position) {
+        lon = position.coords.longitude;
+        lat = position.coords.latitude;
+        map.centerAt([lon, lat])
+      }
+
+      function showError(error) {
+        alert("There has been an error");
+      }
+
+
+    </script>
+  </head>
+
+  <body class="claro">
+
+    <div data-dojo-type="dijit/layout/BorderContainer"
+         data-dojo-props="design:'headline', gutters:false"
+         style="width:100%;height:100%;margin:0;">
+         <div id="content">
+          <div id="LayerList"></div>
+
+      <div id="map"
+        data-dojo-type="dijit/layout/ContentPane"
+        data-dojo-props="region:'center'"
+        style="padding:0;">
+
+        <div id="search"></div>
+
+        <div id="BasemapToggle"></div>
+
+        <div id="HomeButton"></div>
+
+        <div id="LocateButton"></div>
+
+            <div style="position:absolute; right:20px; top:10px; z-Index:999;">
+              <div data-dojo-type="dijit/TitlePane"
+               data-dojo-props="title:'Switch Basemap', closable:false, open:false">
+                <div data-dojo-type="dijit/layout/ContentPane" style="width:380px; height:280px; overflow:auto;">
+                  <div id="basemapGallery"></div>
+
+                </div>
+              </div>
+            </div>
+
+      </div>
+      </div>
+    </div>
+
+  </body>
+</html>
