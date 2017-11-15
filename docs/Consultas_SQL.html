@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
 	<script src="https://js.arcgis.com/3.19/"></script>
 
+
 	<style>
 	html, body, #map {
 		padding: 0;
@@ -182,6 +183,7 @@
 
 	});
 	</script>
+  <script type="text/javascript" language="javascript" src="../js/TablaOrden.js"></script>
 	</head>
 	<body class="claro">
   		<div id="map"></div>
@@ -200,12 +202,12 @@
       </div>
       <br>
       <div id="tabla">
-        <table>
+        <table id='miTabla' class='TablaOrden'>
           <thead id="thead">
             <tr>
-              <th id="t_oid">ObjectID</th>
-              <th id="t_name">City Name</th>
-              <th id="t_pop">Population</th>
+              <th id="t_oid" onclick="TablaOrden.en('miTabla',0)">ObjectID</th>
+              <th id="t_name" onclick="TablaOrden.en('miTabla',1)">City Name</th>
+              <th id="t_pop" onclick="TablaOrden.en('miTabla',2)">Population</th>
             </tr>
           </thead>
           <tbody id="tbody">
